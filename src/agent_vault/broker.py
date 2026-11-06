@@ -47,9 +47,18 @@ def ensure_running(directory: str, port: int = DEFAULT_PORT,
     env["PYTHONPATH"] = os.pathsep.join(filter(None, (root, env.get("PYTHONPATH"))))
     options = ({"creationflags": 0x00000008 | 0x00000200} if os.name == "nt"
                else {"start_new_session": True})
-    child = subprocess.Popen([python_executable or sys.executable, "-B", "-m", "agent_vault",
-        "serve", "--data-dir", directory, "--port", str(port)], stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env, cwd=root, **options)
+    diagnostic = env.get("AGENT_VAULT_TEST_DIAGNOSTICS") == "1"
+    log = None
+    if diagnostic:
+        log = open(os.path.join(os.path.abspath(directory) + ".connector", "startup-test.log"), "ab")
+    try:
+        child = subprocess.Popen([python_executable or sys.executable, "-B", "-m", "agent_vault",
+            "serve", "--data-dir", directory, "--port", str(port)], stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=log if log else subprocess.DEVNULL,
+            env=env, cwd=root, **options)
+    finally:
+        if log:
+            log.close()
     _CHILDREN.append(child)
     deadline = time.monotonic() + 12
     while time.monotonic() < deadline:
@@ -61,6 +70,11 @@ def ensure_running(directory: str, port: int = DEFAULT_PORT,
                 return None
             raise VaultError(503, "core_start_failed")
         time.sleep(.1)
+    if diagnostic:
+        log_path = Path(os.path.abspath(directory) + ".connector") / "startup-test.log"
+        print("Synthetic startup diagnostics: port_open=" + str(port_open(port)), file=sys.stderr)
+        if log_path.exists():
+            print(log_path.read_text(errors="replace")[-8000:], file=sys.stderr)
     child.terminate()
     child.wait(timeout=5)
     raise VaultError(503, "core_start_timeout")

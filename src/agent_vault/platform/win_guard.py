@@ -82,6 +82,8 @@ _advapi32.AddAccessAllowedAceEx.argtypes = [ctypes.c_void_p, wintypes.DWORD,
 _advapi32.AddAccessAllowedAceEx.restype = wintypes.BOOL
 _advapi32.InitializeSecurityDescriptor.argtypes = [ctypes.c_void_p, wintypes.DWORD]
 _advapi32.InitializeSecurityDescriptor.restype = wintypes.BOOL
+_advapi32.SetSecurityDescriptorOwner.argtypes = [ctypes.c_void_p, ctypes.c_void_p, wintypes.BOOL]
+_advapi32.SetSecurityDescriptorOwner.restype = wintypes.BOOL
 _advapi32.SetSecurityDescriptorDacl.argtypes = [ctypes.c_void_p, wintypes.BOOL,
                                                 ctypes.c_void_p, wintypes.BOOL]
 _advapi32.SetSecurityDescriptorDacl.restype = wintypes.BOOL
@@ -186,6 +188,22 @@ def _string_to_sid(text: str) -> int:
     if not _advapi32.ConvertStringSidToSidW(text, ctypes.byref(sid)):
         raise GuardError("sid_conversion_failed")
     return sid.value
+
+
+def _own_new_object(path: str, user_sid: str) -> None:
+    """Elevated Windows tokens may default new objects to Administrators.
+    Set the owner of our newly created object to the actual user SID; never
+    take ownership of an unrelated existing directory or file.
+    """
+    sid = _string_to_sid(user_sid)
+    try:
+        descriptor = ctypes.create_string_buffer(64)
+        if (not _advapi32.InitializeSecurityDescriptor(descriptor, 1)
+                or not _advapi32.SetSecurityDescriptorOwner(descriptor, ctypes.c_void_p(sid), False)
+                or not _advapi32.SetFileSecurityW(path, OWNER_SECURITY_INFORMATION, descriptor)):
+            raise GuardError("owner_assignment_failed")
+    finally:
+        _local_free(sid)
 
 
 def _harden_dacl(path: str, user_sid: str) -> None:
@@ -309,6 +327,8 @@ class WindowsGuard:
         path = os.path.abspath(path)
         if create and not os.path.exists(path):
             os.makedirs(path, mode=0o700, exist_ok=False)
+            _reject_reparse(path)
+            _own_new_object(path, self._user_sid)
         _reject_reparse(path)
         _owner_is_current_user(path, self._user_sid)
         # Fix the environment, then verify strictly: profile trees on this
@@ -330,6 +350,7 @@ class WindowsGuard:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_BINARY
         descriptor = os.open(path, flags, 0o600)
         with os.fdopen(descriptor, "wb") as stream:
+            _own_new_object(path, self._user_sid)
             self.check_file(path)
             stream.write(data)
             stream.flush()

@@ -5,12 +5,18 @@ const [debugPort, base, remote, output, fixture] = process.argv.slice(2);
 let socket, nextId = 1;
 const pending = new Map();
 async function connect() {
-  let target;
-  for (let attempt=0;attempt<60;attempt++) {
-    try { target=await (await fetch(`http://127.0.0.1:${debugPort}/json/new?${encodeURIComponent(base)}`,{method:'PUT'})).json(); break; }
-    catch { await new Promise(r=>setTimeout(r,100)); }
+  let target, lastError;
+  const deadline=Date.now()+30000;
+  while(Date.now()<deadline) {
+    try {
+      const response=await fetch(`http://127.0.0.1:${debugPort}/json/new?${encodeURIComponent(base)}`,{method:'PUT',signal:AbortSignal.timeout(1000)});
+      if(!response.ok)throw Error('CDP discovery HTTP '+response.status);
+      target=await response.json();
+      if(typeof target.webSocketDebuggerUrl!=='string')throw Error('CDP did not return a target');
+      break;
+    } catch(error) {lastError=error;target=null;await new Promise(r=>setTimeout(r,100));}
   }
-  if (!target) throw Error('Browser debugging endpoint not ready');
+  if (!target) throw Error('Browser debugging endpoint not ready: '+lastError?.message);
   socket=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});
   socket.addEventListener('message',event=>{const message=JSON.parse(event.data);if(message.id&&pending.has(message.id)){const entry=pending.get(message.id);pending.delete(message.id);clearTimeout(entry.timer);message.error?entry.reject(Error(message.error.message)):entry.resolve(message.result);}});

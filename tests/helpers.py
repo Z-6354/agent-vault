@@ -18,9 +18,9 @@ def test_directory(prefix: str = "vault-test-") -> str:
     base = os.path.join(os.path.expanduser("~"), ".agent-vault-tests")
     os.makedirs(base, mode=0o700, exist_ok=True)
     path = os.path.join(base, f"{prefix}{os.getpid()}-{next(_COUNTER)}")
-    os.makedirs(path, mode=0o700)
-    # Harden against the profile tree's inherited Everyone grants.
-    platform_guard().ensure_private_directory(path)
+    # Let the guard own creation too: elevated Windows tokens may otherwise
+    # assign newly created directories to the Administrators group.
+    platform_guard().ensure_private_directory(path, create=True)
     return path
 
 

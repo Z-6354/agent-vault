@@ -48,6 +48,10 @@ def main(argv=None):
         from .broker import Broker, ensure_running
         from .ipc import CoreClient
         if args.command == "serve":
+            if os.environ.get("AGENT_VAULT_TEST_DIAGNOSTICS") == "1":
+                import faulthandler
+                faulthandler.dump_traceback_later(8, file=sys.stderr)
+                print("Synthetic startup: constructing broker", file=sys.stderr, flush=True)
             Broker(args.data_dir, args.port).serve_forever()
             return 0
         ensure_running(args.data_dir, args.port)

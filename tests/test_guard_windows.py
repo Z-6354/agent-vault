@@ -11,9 +11,9 @@ from agent_vault.guard import GuardError, platform_guard
 class WindowsGuardTests(unittest.TestCase):
     def setUp(self):
         self.guard = platform_guard()
-        self.root = tempfile.mkdtemp(prefix="vault-guard-win-")
-        self.guard.ensure_private_directory(self.root)
-        self.addCleanup(shutil.rmtree, self.root, True)
+        parent = tempfile.mkdtemp(prefix="vault-guard-win-")
+        self.addCleanup(shutil.rmtree, parent, True)
+        self.root = self.guard.ensure_private_directory(os.path.join(parent, "private"), create=True)
 
     def _private_dir(self):
         return self.guard.ensure_private_directory(

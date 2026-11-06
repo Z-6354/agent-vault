@@ -26,6 +26,8 @@ jobs:
       - name: Install actual package
         run: python -m pip install .
       - name: Unit and real HTTP/stdio integration tests
+        env:
+          AGENT_VAULT_TEST_DIAGNOSTICS: '1'
         run: python -B -W error::ResourceWarning -m unittest discover -s tests -v
       - name: End-to-end acceptance with synthetic data
         run: python -B scripts/acceptance.py
@@ -77,5 +79,5 @@ jobs:
         if: always()
         with:
           name: browser-evidence
-          path: ../browser-evidence/*.png
+          path: browser-evidence/*
           if-no-files-found: ignore

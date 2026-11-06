@@ -20,6 +20,7 @@ from agent_vault.broker import Broker
 def main():
     root = Path(tempfile.mkdtemp(prefix="agent-vault-installed-"))
     directory = root / "data"
+    from agent_vault.guard import platform_guard
     broker = Broker(str(directory), 0)
     server = broker.build_server()
     thread = threading.Thread(target=server.serve_forever, daemon=True)

@@ -30,7 +30,7 @@ def main():
     if not browser_path or not node:
         raise SystemExit('Set VAULT_TEST_BROWSER and provide Node for browser acceptance.')
     root = test_directory('browser-acceptance-')
-    evidence = ROOT.parent / 'browser-evidence'
+    evidence = ROOT / 'browser-evidence'
     evidence.mkdir(exist_ok=True)
     remote = RemoteFixture()
     broker = Broker(root + '/data', 0, allow_loopback_http=True)
@@ -80,15 +80,21 @@ def main():
         if os.name == 'posix' and (os.geteuid() == 0 or os.environ.get('VAULT_TEST_NO_SANDBOX') == '1'):
             # Only the isolated synthetic test browser, never production UI.
             browser_args.insert(1, '--no-sandbox')
+        browser_log = open(evidence / 'browser-stderr.log', 'wb')
         browser=subprocess.Popen(browser_args,
-            stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=browser_log)
         result=subprocess.run([node,str(ROOT/'scripts/browser-acceptance.cjs'),str(debug_port),client.url,
             remote.url,str(evidence),f'http://127.0.0.1:{fixture.server_port}'],timeout=80)
+        if result.returncode:
+            browser_log.flush()
+            print('Synthetic browser diagnostics: executable=' + browser_path + ' returncode=' + str(browser.poll()), file=sys.stderr)
+            print((evidence / 'browser-stderr.log').read_text(errors='replace')[-8000:], file=sys.stderr)
         return result.returncode
     finally:
         if browser:
             browser.terminate()
             browser.wait(10)
+            browser_log.close()
         server.shutdown()
         server.server_close()
         thread.join(3)
