@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from socketserver import TCPServer
 from urllib.parse import parse_qs, urlsplit
 
 from .connection import ConnectionCore, ADMIN
@@ -216,6 +217,12 @@ class Broker:
         lease = CoreLease(self.directory)
         class CoreServer(ThreadingHTTPServer):
             daemon_threads = True
+            def server_bind(self):
+                # HTTPServer.server_bind calls getfqdn(), which can block on
+                # broken/offline reverse DNS (observed on macOS). This fixed
+                # loopback service never needs a resolved server hostname.
+                TCPServer.server_bind(self)
+                self.server_name, self.server_port = self.server_address[:2]
             def server_close(self):
                 try:
                     super().server_close()

@@ -44,6 +44,21 @@ class SelfHealTests(unittest.TestCase):
         # The respawned core must answer subsequent commands too.
         self.assertEqual(self.client.command("status", {})["phase"], "needs_target")
 
+    def test_loopback_startup_does_not_depend_on_reverse_dns(self):
+        from unittest.mock import patch
+        directory = self.root + "/no-dns"
+        broker = Broker(directory, 0)
+        with patch("socket.getfqdn", side_effect=RuntimeError("synthetic broken reverse DNS")):
+            server = broker.build_server()
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            self.assertEqual(CoreClient(directory, broker.port).command("status", {})["phase"], "needs_target")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(3)
+
     def test_health_check_survives_healthy_core(self):
         self.assertTrue(self.client.verify())
         self.assertEqual(self.client.command("status", {})["phase"], "needs_target")
