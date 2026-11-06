@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="vault-csrf" content="__CSRF__"><title>Agent Vault · 安全连接</title>
+<link rel="stylesheet" href="/assets/style.css"><script src="/assets/app.js" defer></script>
+</head>
+<body>
+<main class="shell">
+<header><div class="mark" aria-hidden="true">V</div><div><span class="eyebrow">YOUR PRIVATE CONNECTION</span><h1>Agent Vault</h1></div><span class="local">安全输入</span></header>
+<div class="intro"><span class="step" id="step">01 / CONNECT</span><h2 id="title">连接你的金库</h2><p id="subtitle">选择存储位置，然后在这里完成登录。无需在聊天中发送任何密码。</p></div>
+<div id="target-label" class="target" hidden></div>
+<div id="feedback" role="alert" aria-live="polite" hidden></div>
+<section id="selection" hidden>
+<div class="choices" role="group" aria-label="存储位置"><button id="remote-choice" type="button" aria-pressed="true">远程服务器<span>连接已有服务</span></button><button id="local-choice" type="button" aria-pressed="false">本机金库<span>存储在这台设备</span></button></div>
+<div id="url-field"><label for="server-url">服务器地址</label><input id="server-url" type="url" autocomplete="url" placeholder="https://vault.example.com"><p class="hint">使用金库服务的 HTTPS 地址，包含实际端口或路径前缀。</p></div>
+<button class="primary" id="probe" type="button">检查并继续 <span aria-hidden="true">→</span></button>
+<button class="secondary" id="cancel" type="button" hidden>保留原连接</button>
+</section>
+<section id="authentication" hidden>
+<p id="auth-note" class="note" hidden></p>
+<div id="username-field"><label for="username">金库账号</label><input id="username" type="text" autocomplete="username" maxlength="100" placeholder="输入你的账号"></div>
+<label for="passphrase" id="password-label">登录密码</label><div class="password-wrap"><input id="passphrase" type="password" autocomplete="current-password"><button class="reveal" type="button" data-for="passphrase" aria-label="显示密码">显示</button></div>
+<div id="confirmation" hidden><label for="confirm">确认主口令</label><div class="password-wrap"><input id="confirm" type="password" autocomplete="new-password"><button class="reveal" type="button" data-for="confirm" aria-label="显示确认口令">显示</button></div><p class="hint">至少 12 位。请妥善保管，遗失后无法恢复本地密文。</p></div>
+<label class="remember"><input id="remember-device" type="checkbox" checked><span>记住此设备<small>加密保存登录凭据，重启或会话失效后自动重新连接。</small></span></label>
+<button class="primary" id="authenticate" type="button">登录</button><button class="secondary" id="change-target" type="button">选择其他存储位置</button>
+</section>
+<section id="ready" hidden><div class="connected"><span class="dot"></span><div><strong>连接已就绪</strong><p>回到对话告诉 Agent 要保存什么，录入请求会显示在这里。</p></div></div><div id="requests"></div><div class="actions"><button id="switch" class="secondary" type="button">更换服务器 / 存储位置</button><button id="logout" class="secondary" type="button">退出并忘记此设备</button></div><p class="hint" id="session-hint"></p></section>
+<section id="reconnecting" hidden><p class="note">正在恢复此设备的连接。临时网络故障不会删除登录记忆，也不会要求你反复输入密码。</p><button class="primary" id="retry-connection" type="button">重试连接</button><button class="secondary" id="forget-device" type="button">忘记此设备并重新登录</button></section>
+<footer><span aria-hidden="true">◇</span> 密码和密钥直接交给你选择的金库服务，聊天中的 Agent 不会收到。</footer>
+</main>
+</body></html>

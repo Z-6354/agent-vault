@@ -1,0 +1,5 @@
+include LICENSE README.md README_EN.md AGENTS.md SECURITY.md CONTRIBUTING.md
+recursive-include docs *.md
+recursive-include scripts *.py *.cjs *.ps1
+recursive-include src/agent_vault/web *.html *.css *.js
+recursive-include tests *.py

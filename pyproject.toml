@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-vault-core"
+version = "2.0.0"
+description = "One vault connection core with browser, terminal and MCP clients; local and remote backends"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+]
+dependencies = ["cryptography>=42"]
+
+[project.urls]
+Homepage = "https://github.com/Z-6354/agent-vault"
+Issues = "https://github.com/Z-6354/agent-vault/issues"
+
+[project.scripts]
+agent-vault = "agent_vault.__main__:main"
+agent-vault-mcp = "agent_vault.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent_vault = ["web/*.html", "web/*.css", "web/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
